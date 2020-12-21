@@ -1,4 +1,5 @@
 // import { fetchBootstrap } from "fpl-api"
+import { useQuery } from "react-query"
 import {
   Array,
   Boolean,
@@ -38,18 +39,39 @@ async function runtypeFetch<T, R>(runtype: Runtype<R>, url: string) {
   }
 }
 
-const Bootstrap = Record({
-  events: Array(
-    Record({
-      id: Number,
-      finished: Boolean,
-      is_current: Boolean
-    })
-  )
+const ElementRT = Record({
+  id: Number,
+  first_name: String,
+  second_name: String,
+  team: Number,
+  team_code: Number,
+  selected_by_percent: String
 })
-type Bootstrap = Static<typeof Bootstrap>
+type ElementRT = Static<typeof ElementRT>
 
-const League = Record({
+const TeamRT = Record({
+  code: Number,
+  id: Number,
+  name: String,
+  short_name: String
+})
+type TeamRT = Static<typeof TeamRT>
+
+const EventRT = Record({
+  id: Number,
+  finished: Boolean,
+  is_current: Boolean
+})
+type EventRT = Static<typeof EventRT>
+
+const BootstrapRT = Record({
+  events: Array(EventRT),
+  elements: Array(ElementRT),
+  teams: Array(TeamRT)
+})
+type BootstrapRT = Static<typeof BootstrapRT>
+
+const LeagueRT = Record({
   league: Record({ name: String }),
   standings: Record({
     results: Array(
@@ -57,20 +79,49 @@ const League = Record({
     )
   })
 })
-type League = Static<typeof League>
+type LeagueRT = Static<typeof LeagueRT>
 
 export function fetchBootstrap() {
   const url = `${BASE_URL}/bootstrap-static/`
-  return runtypeFetch(Bootstrap, url)
+  return runtypeFetch(BootstrapRT, url)
 }
 export function fetchLeague(opts: { leagueId: number }) {
   const url = `${BASE_URL}/leagues-classic/${opts.leagueId}/standings`
-  return runtypeFetch(League, url)
+  return runtypeFetch(LeagueRT, url)
 }
 export function fetchGameweek(opts: { teamId: number; eventId: number }) {
   const url = `${BASE_URL}/entry/${opts.teamId}/event/${opts.eventId}/picks/`
   return runtypeFetch(Record({}), url)
 }
+
+export interface Player {
+  id: number
+  lastName: string
+  teamId: number
+  teamCode: number
+  selectedBy: string
+}
+export interface Team {
+  id: number
+  code: number
+  name: string
+  shortName: string
+}
+const playersCache: { [id: number]: Player } = {}
+
+// function populatePlayersCache(elements: Element[]) {
+//   console.log({ elements })
+//   ;(elements || []).forEach((element) => {
+//     const { id, second_name, team, team_code, selected_by_percent } = element
+//     playersCache[id] = {
+//       id,
+//       lastName: second_name,
+//       teamId: team,
+//       teamCode: team_code,
+//       selectedBy: selected_by_percent
+//     }
+//   })
+// }
 
 export async function populate() {
   const bootstrap = await fetchBootstrap()
@@ -81,6 +132,7 @@ export async function populate() {
       break
     }
   }
+  // populatePlayersCache(bootstrap.elements)
   if (!currentEventId) throw new Error(`no currentEventId`)
   const league = await fetchLeague({ leagueId: LEAGUE_ID })
   const firstTeamId = league.standings.results[0]?.entry
@@ -88,5 +140,54 @@ export async function populate() {
     teamId: firstTeamId,
     eventId: currentEventId
   })
-  console.log({ league, bootstrap, currentEventId, firstTeamId, gw })
+  console.log({
+    league,
+    bootstrap,
+    currentEventId,
+    firstTeamId,
+    gw,
+    playersCache
+  })
+}
+
+function parseCurrentEventId(events: EventRT[]): number {
+  let currentEventId = 0
+  for (let eventData of events) {
+    if (eventData.is_current) {
+      currentEventId = eventData.id
+      break
+    }
+  }
+  return currentEventId
+}
+function parsePlayerFromElement(element: ElementRT): Player {
+  const { id, second_name, team, team_code, selected_by_percent } = element
+  return {
+    id,
+    lastName: second_name,
+    teamId: team,
+    teamCode: team_code,
+    selectedBy: selected_by_percent
+  }
+}
+function parseTeam(team: TeamRT): Team {
+  const { id, code, name, short_name } = team
+  return {
+    id,
+    code,
+    name,
+    shortName: short_name
+  }
+}
+
+export async function init() {
+  const bootstrap = await fetchBootstrap()
+  const players = bootstrap.elements.map(parsePlayerFromElement)
+  const teams = bootstrap.teams.map(parseTeam)
+  const currentEventId = parseCurrentEventId(bootstrap.events)
+  return { players, teams, currentEventId }
+}
+
+export function useInitQuery() {
+  return useQuery("INIT", init)
 }

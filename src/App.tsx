@@ -1,13 +1,12 @@
 import React from "react"
-import { QueryClient, QueryClientProvider, useQuery } from "react-query"
-import { populate } from "./services/api"
-import GlobalStyle from "./style/global"
+import { QueryClient, QueryClientProvider } from "react-query"
+import PlayerSearch from "src/components/PlayerSearch"
+import GlobalStyle from "src/style/global"
 
 const queryClient = new QueryClient()
 
 const XD: React.FC<{}> = () => {
-  const { data } = useQuery(["POPULATE"], populate)
-  return null
+  return <PlayerSearch />
 }
 
 const App: React.FC<{}> = () => {
@@ -17,7 +16,6 @@ const App: React.FC<{}> = () => {
       <QueryClientProvider client={queryClient}>
         <XD />
       </QueryClientProvider>
-      <div children="App" />
     </>
   )
 }
