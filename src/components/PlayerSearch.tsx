@@ -22,16 +22,31 @@ const PlayerSearch: React.FC<{}> = (props) => {
     return players.map((player) => {
       return {
         value: player,
-        label: `${player.firstName} ${player.lastName} | ${player.webName}`
+        label: `${player.firstName} ${player.webName}`
       }
     })
   }, [players])
+
+  const [isOpen, setIsOpen] = React.useState(false)
+
+  const handleInputChange = React.useCallback((query, { action }) => {
+    if (action == "input-change") {
+      const isLongEnough = Boolean(query && query.length >= 2)
+      setIsOpen(isLongEnough)
+    }
+  }, [])
+  const close = () => setIsOpen(false)
+  const handleSelect = React.useCallback((...args) => {
+    close()
+  }, [])
+
   return (
     <Select
       options={options}
-      onChange={(x) => {
-        console.log({ x })
-      }}
+      onInputChange={handleInputChange}
+      onChange={handleSelect}
+      onBlur={close}
+      menuIsOpen={isOpen}
     />
   )
 }
