@@ -73,14 +73,32 @@ const BootstrapRT = Record({
 type BootstrapRT = Static<typeof BootstrapRT>
 
 const LeagueRT = Record({
-  league: Record({ name: String }),
+  league: Record({ id: Number, name: String }),
   standings: Record({
     results: Array(
-      Record({ entry: Number, entry_name: String, player_name: String })
+      Record({
+        entry: Number,
+        entry_name: String,
+        player_name: String,
+        rank: Number
+      })
     )
   })
 })
 type LeagueRT = Static<typeof LeagueRT>
+
+const PickRT = Record({
+  element: Number,
+  is_captain: Boolean,
+  is_vice_captain: Boolean,
+  position: Number
+})
+type PickRT = Static<typeof PickRT>
+
+const GameweekRT = Record({
+  picks: Array(PickRT)
+})
+type GameweekRT = Static<typeof GameweekRT>
 
 export function fetchBootstrap() {
   const url = `${BASE_URL}/bootstrap-static/`
@@ -92,7 +110,7 @@ export function fetchLeague(opts: { leagueId: number }) {
 }
 export function fetchGameweek(opts: { teamId: number; eventId: number }) {
   const url = `${BASE_URL}/entry/${opts.teamId}/event/${opts.eventId}/picks/`
-  return runtypeFetch(Record({}), url)
+  return runtypeFetch(GameweekRT, url)
 }
 
 export interface Player {
@@ -110,7 +128,21 @@ export interface Team {
   name: string
   shortName: string
 }
-const playersCache: { [id: number]: Player } = {}
+type PickType = "STARTING" | "BENCHED" | "CAPTAIN" | "VICE"
+export interface Manager {
+  id: number
+  name: string
+  teamName: string
+  rank: number
+  picks: {
+    [id: number]: PickType
+  }
+}
+export interface League {
+  id: number
+  name: string
+  managers: Manager[]
+}
 
 // function populatePlayersCache(elements: Element[]) {
 //   console.log({ elements })
@@ -148,8 +180,7 @@ export async function populate() {
     bootstrap,
     currentEventId,
     firstTeamId,
-    gw,
-    playersCache
+    gw
   })
 }
 
@@ -193,7 +224,7 @@ function parseTeam(team: TeamRT): Team {
   }
 }
 
-export async function init() {
+async function init() {
   const bootstrap = await fetchBootstrap()
   console.log(bootstrap)
   const players = bootstrap.elements.map(parsePlayerFromElement)
@@ -204,4 +235,58 @@ export async function init() {
 
 export function useInitQuery() {
   return useQuery("INIT", init)
+}
+
+function getPickType(pick: PickRT): PickType {
+  if (pick.is_captain) return "CAPTAIN"
+  if (pick.is_vice_captain) return "VICE"
+  return pick.position <= 11 ? "STARTING" : "BENCHED"
+}
+
+async function getLeague(
+  leagueId: number,
+  currentEventId: number
+): Promise<League> {
+  const league = await fetchLeague({ leagueId })
+  const {
+    league: { name, id },
+    standings: { results }
+  } = league
+  const managers = await Promise.all(
+    results.map(async (result) => {
+      const gw = await fetchGameweek({
+        teamId: result.entry,
+        eventId: currentEventId
+      })
+      const picks = gw.picks.reduce((acc, pick) => {
+        acc[pick.element] = getPickType(pick)
+        return acc
+      }, {} as Manager["picks"])
+      const manager: Manager = {
+        id: result.entry,
+        name: result.player_name,
+        teamName: result.entry_name,
+        rank: result.rank,
+        picks
+      }
+      return manager
+    })
+  )
+  return {
+    name,
+    id,
+    managers
+  }
+}
+
+export function useGetLeagueQuery(leagueId = LEAGUE_ID) {
+  const { data } = useInitQuery()
+  // const queryArgs = data
+  // ? [queryKey, () => , { enabled: true }]
+  // : [queryKey, , {enabled:false}]
+  return useQuery(
+    ["LEAGUE", leagueId],
+    data ? () => getLeague(leagueId, data.currentEventId) : () => {},
+    { enabled: !!data }
+  )
 }

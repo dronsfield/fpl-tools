@@ -15,10 +15,18 @@ import React from "react"
 import Select from "react-select"
 import { useInitQuery } from "src/services/api"
 
+const NullComp = () => null
+
+const selectComponents = {
+  DropdownIndicator: NullComp,
+  IndicatorSeparator: NullComp
+}
+
 const PlayerSearch: React.FC<{}> = (props) => {
   const { data } = useInitQuery()
   const players = data?.players || []
   const options = React.useMemo(() => {
+    console.log("GETTING OPTIONS")
     return players.map((player) => {
       return {
         value: player,
@@ -30,13 +38,14 @@ const PlayerSearch: React.FC<{}> = (props) => {
   const [isOpen, setIsOpen] = React.useState(false)
 
   const handleInputChange = React.useCallback((query, { action }) => {
-    if (action == "input-change") {
+    if (action === "input-change") {
       const isLongEnough = Boolean(query && query.length >= 2)
       setIsOpen(isLongEnough)
     }
   }, [])
   const close = () => setIsOpen(false)
   const handleSelect = React.useCallback((...args) => {
+    console.log({ args })
     close()
   }, [])
 
@@ -47,6 +56,9 @@ const PlayerSearch: React.FC<{}> = (props) => {
       onChange={handleSelect}
       onBlur={close}
       menuIsOpen={isOpen}
+      openMenuOnClick={false}
+      components={selectComponents}
+      isClearable={true}
     />
   )
 }
