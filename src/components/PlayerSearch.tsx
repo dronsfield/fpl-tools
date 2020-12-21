@@ -13,7 +13,7 @@
 
 import React from "react"
 import Select from "react-select"
-import { useInitQuery } from "src/services/api"
+import { Player, useInitQuery } from "src/services/api"
 
 const NullComp = () => null
 
@@ -22,7 +22,9 @@ const selectComponents = {
   IndicatorSeparator: NullComp
 }
 
-const PlayerSearch: React.FC<{}> = (props) => {
+const PlayerSearch: React.FC<{
+  onChange: (player: Player | null) => void
+}> = (props) => {
   const { data } = useInitQuery()
   const players = data?.players || []
   const options = React.useMemo(() => {
@@ -44,8 +46,8 @@ const PlayerSearch: React.FC<{}> = (props) => {
     }
   }, [])
   const close = () => setIsOpen(false)
-  const handleSelect = React.useCallback((...args) => {
-    console.log({ args })
+  const handleSelect = React.useCallback((option) => {
+    props.onChange(option?.value || null)
     close()
   }, [])
 

@@ -286,7 +286,7 @@ export function useGetLeagueQuery(leagueId = LEAGUE_ID) {
   // : [queryKey, , {enabled:false}]
   return useQuery(
     ["LEAGUE", leagueId],
-    data ? () => getLeague(leagueId, data.currentEventId) : () => {},
+    () => getLeague(leagueId, data?.currentEventId || 0),
     { enabled: !!data }
   )
 }
