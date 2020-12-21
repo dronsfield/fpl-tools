@@ -23,6 +23,7 @@
     "react-dom": "^17.0.1",
     "react-query": "^3.4.0",
     "react-scripts": "4.0.1",
+    "react-select": "^3.1.1",
     "react-use": "^15.3.4",
     "runtypes": "^5.0.1",
     "source-map-explorer": "^2.5.1",
@@ -37,7 +38,8 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "analyze-bundle": "yarn build && source-map-explorer 'build/static/js/*.js'",
-    "prettify": "pretty-quick --pattern '**/*.*(js|jsx|ts|tsx|json)'"
+    "prettify": "pretty-quick --pattern '**/*.*(js|jsx|ts|tsx|json)'",
+    "types": "typesync && yarn"
   },
   "eslintConfig": {
     "extends": [
@@ -63,6 +65,8 @@
     }
   },
   "devDependencies": {
-    "@types/tough-cookie": "^4.0.0"
+    "@types/react-select": "^3.0.28",
+    "@types/tough-cookie": "^4.0.0",
+    "typesync": "^0.8.0"
   }
 }

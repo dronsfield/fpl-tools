@@ -43,6 +43,7 @@ const ElementRT = Record({
   id: Number,
   first_name: String,
   second_name: String,
+  web_name: String,
   team: Number,
   team_code: Number,
   selected_by_percent: String
@@ -96,7 +97,9 @@ export function fetchGameweek(opts: { teamId: number; eventId: number }) {
 
 export interface Player {
   id: number
+  firstName: string
   lastName: string
+  webName: string
   teamId: number
   teamCode: number
   selectedBy: string
@@ -161,10 +164,20 @@ function parseCurrentEventId(events: EventRT[]): number {
   return currentEventId
 }
 function parsePlayerFromElement(element: ElementRT): Player {
-  const { id, second_name, team, team_code, selected_by_percent } = element
+  const {
+    id,
+    first_name,
+    web_name,
+    second_name,
+    team,
+    team_code,
+    selected_by_percent
+  } = element
   return {
     id,
+    firstName: first_name,
     lastName: second_name,
+    webName: web_name,
     teamId: team,
     teamCode: team_code,
     selectedBy: selected_by_percent
@@ -182,6 +195,7 @@ function parseTeam(team: TeamRT): Team {
 
 export async function init() {
   const bootstrap = await fetchBootstrap()
+  console.log(bootstrap)
   const players = bootstrap.elements.map(parsePlayerFromElement)
   const teams = bootstrap.teams.map(parseTeam)
   const currentEventId = parseCurrentEventId(bootstrap.events)
