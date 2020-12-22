@@ -45,14 +45,21 @@ const PickTypeSpan = styled.span`
   text-transform: uppercase;
 `
 
-const OwnersList: React.FC<{ player: Player | null }> = (props) => {
-  const { player } = props
+const OwnersList: React.FC<{ player: Player | null; showAll: boolean }> = (
+  props
+) => {
+  const { player, showAll } = props
 
   const { data } = useGetLeagueQuery()
 
   const owners = React.useMemo(() => {
-    const managers = data?.managers || blarr
-    const owners = managers.map((manager) => {
+    const allManagers = data?.managers || blarr
+    const relevantManagers = showAll
+      ? allManagers
+      : player
+      ? allManagers.filter((manager) => !!manager.picks[player.id])
+      : blarr
+    const owners = relevantManagers.map((manager) => {
       const { name, teamName, rank } = manager
       return {
         name: capitalCase(name),
@@ -62,13 +69,13 @@ const OwnersList: React.FC<{ player: Player | null }> = (props) => {
       }
     })
     return owners
-  }, [player, data])
+  }, [player, data, showAll])
 
   return (
     <List>
       {owners.map((owner) => {
         return (
-          <Item isPicked={Boolean(owner.pickType)}>
+          <Item isPicked={Boolean(owner.pickType)} key={owner.rank}>
             <NameSpan children={owner.name} />
             <RankSpan children={`#${owner.rank}`} />
             <PickTypeSpan children={owner.pickType} />
