@@ -1,19 +1,7 @@
-// import {
-//   Combobox,
-//   ComboboxInput,
-//   ComboboxList,
-//   ComboboxOption,
-//   ComboboxPopover
-// } from "@reach/combobox"
-// import "@reach/combobox/styles.css"
-// import { matchSorter } from "match-sorter"
-// import React from "react"
-// import { useThrottle } from "react-use"
-// import { useInitQuery } from "../services/api"
-
 import React from "react"
 import Select from "react-select"
 import { Player, useInitQuery } from "src/services/api"
+import { blarr } from "src/util/blanks"
 
 const NullComp = () => null
 
@@ -25,14 +13,16 @@ const selectComponents = {
 const PlayerSearch: React.FC<{
   onChange: (player: Player | null) => void
 }> = (props) => {
+  const { onChange } = props
+
   const { data } = useInitQuery()
-  const players = data?.players || []
+
+  const players = data?.players || blarr
   const options = React.useMemo(() => {
-    console.log("GETTING OPTIONS")
     return players.map((player) => {
       return {
         value: player,
-        label: `${player.firstName} ${player.webName}`
+        label: player.webName
       }
     })
   }, [players])
@@ -46,10 +36,13 @@ const PlayerSearch: React.FC<{
     }
   }, [])
   const close = () => setIsOpen(false)
-  const handleSelect = React.useCallback((option) => {
-    props.onChange(option?.value || null)
-    close()
-  }, [])
+  const handleSelect = React.useCallback(
+    (option) => {
+      onChange(option?.value || null)
+      close()
+    },
+    [onChange]
+  )
 
   return (
     <Select
@@ -61,58 +54,9 @@ const PlayerSearch: React.FC<{
       openMenuOnClick={false}
       components={selectComponents}
       isClearable={true}
+      placeholder="Who has..."
     />
   )
 }
-
-// const PlayerSearch: React.FC<{}> = (props) => {
-//   const [term, setTerm] = React.useState("")
-//   const results = usePlayerMatch(term)
-//   return (
-//     <div>
-//       <h4>Clientside Search</h4>
-//       <Combobox
-//         aria-label="Cities"
-//         onSelect={(something) => {
-//           console.log({ something })
-//         }}
-//       >
-//         <ComboboxInput
-//           className="city-search-input"
-//           onChange={(event) => setTerm(event?.target?.value || "")}
-//         />
-//         {results && (
-//           <ComboboxPopover className="shadow-popup">
-//             {results.length > 0 ? (
-//               <ComboboxList>
-//                 {results.slice(0, 10).map((result, index) => (
-//                   <ComboboxOption key={index} value={`${result.lastName}`} />
-//                 ))}
-//               </ComboboxList>
-//             ) : (
-//               <span style={{ display: "block", margin: 8 }}>
-//                 No results found
-//               </span>
-//             )}
-//           </ComboboxPopover>
-//         )}
-//       </Combobox>
-//     </div>
-//   )
-// }
-// function usePlayerMatch(term: string) {
-//   const throttledTerm = useThrottle(term, 100)
-//   const { data } = useInitQuery()
-//   const players = data?.players || []
-//   return React.useMemo(
-//     () =>
-//       term.trim() === ""
-//         ? null
-//         : matchSorter(players, term, {
-//             keys: ["lastName"]
-//           }),
-//     [throttledTerm]
-//   )
-// }
 
 export default PlayerSearch

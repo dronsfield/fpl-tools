@@ -10,21 +10,11 @@ import {
   String,
   ValidationError
 } from "runtypes"
-import tough from "tough-cookie"
 import betterFetch from "../util/betterFetch"
 
 const BASE_URL =
-  "https://cors-anywhere.herokuapp.com/https://fantasy.premierleague.com/api"
+  "https://dronz-proxy.herokuapp.com/https://fantasy.premierleague.com/api"
 const LEAGUE_ID = 90271
-
-const cookie = new tough.CookieJar()
-
-// const originalFetch = window.fetch
-// function monkeyFetch(input: string, init: RequestInit) {
-//   return originalFetch(`https://cors-anywhere.herokuapp.com/${input}`, init)
-// }
-// // @ts-ignore
-// window.fetch = monkeyFetch
 
 async function runtypeFetch<T, R>(runtype: Runtype<R>, url: string) {
   try {
@@ -105,7 +95,7 @@ export function fetchBootstrap() {
   return runtypeFetch(BootstrapRT, url)
 }
 export function fetchLeague(opts: { leagueId: number }) {
-  const url = `${BASE_URL}/leagues-classic/${opts.leagueId}/standings`
+  const url = `${BASE_URL}/leagues-classic/${opts.leagueId}/standings/`
   return runtypeFetch(LeagueRT, url)
 }
 export function fetchGameweek(opts: { teamId: number; eventId: number }) {
@@ -128,7 +118,7 @@ export interface Team {
   name: string
   shortName: string
 }
-type PickType = "STARTING" | "BENCHED" | "CAPTAIN" | "VICE"
+export type PickType = "STARTING" | "BENCHED" | "CAPTAIN" | "VICE"
 export interface Manager {
   id: number
   name: string
@@ -142,46 +132,6 @@ export interface League {
   id: number
   name: string
   managers: Manager[]
-}
-
-// function populatePlayersCache(elements: Element[]) {
-//   console.log({ elements })
-//   ;(elements || []).forEach((element) => {
-//     const { id, second_name, team, team_code, selected_by_percent } = element
-//     playersCache[id] = {
-//       id,
-//       lastName: second_name,
-//       teamId: team,
-//       teamCode: team_code,
-//       selectedBy: selected_by_percent
-//     }
-//   })
-// }
-
-export async function populate() {
-  const bootstrap = await fetchBootstrap()
-  let currentEventId = 0
-  for (let eventData of bootstrap.events) {
-    if (eventData.is_current) {
-      currentEventId = eventData.id
-      break
-    }
-  }
-  // populatePlayersCache(bootstrap.elements)
-  if (!currentEventId) throw new Error(`no currentEventId`)
-  const league = await fetchLeague({ leagueId: LEAGUE_ID })
-  const firstTeamId = league.standings.results[0]?.entry
-  const gw = await fetchGameweek({
-    teamId: firstTeamId,
-    eventId: currentEventId
-  })
-  console.log({
-    league,
-    bootstrap,
-    currentEventId,
-    firstTeamId,
-    gw
-  })
 }
 
 function parseCurrentEventId(events: EventRT[]): number {
@@ -226,7 +176,6 @@ function parseTeam(team: TeamRT): Team {
 
 async function init() {
   const bootstrap = await fetchBootstrap()
-  console.log(bootstrap)
   const players = bootstrap.elements.map(parsePlayerFromElement)
   const teams = bootstrap.teams.map(parseTeam)
   const currentEventId = parseCurrentEventId(bootstrap.events)
@@ -281,12 +230,9 @@ async function getLeague(
 
 export function useGetLeagueQuery(leagueId = LEAGUE_ID) {
   const { data } = useInitQuery()
-  // const queryArgs = data
-  // ? [queryKey, () => , { enabled: true }]
-  // : [queryKey, , {enabled:false}]
   return useQuery(
     ["LEAGUE", leagueId],
     () => getLeague(leagueId, data?.currentEventId || 0),
-    { enabled: !!data }
+    { enabled: !!data, retry: false }
   )
 }
