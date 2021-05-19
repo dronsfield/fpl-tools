@@ -17,7 +17,7 @@ const Item = styled.li<{ isPicked: boolean }>`
   align-items: center;
   background-color: white;
   border: 1px solid ${colors.border};
-  padding: 0.8em;
+  padding: 9px 10px;
   border-top-width: 0;
 
   &:first-child {
